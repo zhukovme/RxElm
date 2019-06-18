@@ -1,12 +1,13 @@
 package com.zhukovme.rxelm.program
 
 import com.jakewharton.rxrelay2.BehaviorRelay
-import com.zhukovme.rxelm.interceptor.RxElmInterceptor
+import com.zhukovme.rxelm.interceptor.*
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.disposables.Disposable
+import timber.log.Timber
 import java.util.*
 
 class Program<S : State> internal constructor(
@@ -29,16 +30,9 @@ class Program<S : State> internal constructor(
     private lateinit var state: S
 
     fun run(initialState: S, initialMsg: Msg = Init) {
-//        if (isRunning) throw IllegalStateException()
         init(initialState)
-        render(initialState)
         accept(initialMsg)
-    }
-
-    fun run(initialState: S, initialMsgs: List<Msg>) {
-        init(initialState)
         render(initialState)
-        initialMsgs.forEach { accept(it) }
     }
 
     fun getState(): S? = if (this::state.isInitialized) state else null
@@ -54,16 +48,16 @@ class Program<S : State> internal constructor(
     }
 
     fun accept(msg: Msg) {
-        interceptor.onMsgReceived(msg, state)
+        intercept(OnMsgReceived(msg, state))
         addMsgToQueue(msg)
     }
 
     fun render(state: S) {
         if (component is RenderableComponent) {
+            intercept(OnRender(state))
             isRendering = true
             component.render(state)
             isRendering = false
-            interceptor.onRender(state)
         }
     }
 
@@ -80,17 +74,18 @@ class Program<S : State> internal constructor(
     }
 
     fun stop() {
+        intercept(OnStop(state))
         isRunning = false
         disposableManager.disposeAll()
-        interceptor.onStop(state)
     }
 
     private fun init(initialState: S) {
+        if (isRunning) throw IllegalStateException("The Program is already running")
+        isRunning = true
         this.state = initialState
+        intercept(OnInit(state))
         val msgDisposable = createLoop(component)
         disposableManager.addMsgDisposable(msgDisposable)
-        isRunning = true
-        interceptor.onInit(state)
     }
 
     private fun createLoop(component: Component<S>): Disposable {
@@ -98,11 +93,12 @@ class Program<S : State> internal constructor(
             .observeOn(msgScheduler)
             .subscribe { msg ->
                 val update = component.update(msg, state)
-                interceptor.onUpdate(msg, update.cmd, update.updatedState, state)
+
+                if (update.updatedState == null && update.cmd is None) intercept(OnIgnoreMsg(msg, state))
+                else intercept(OnUpdate(msg, update.cmd, update.updatedState, state))
 
                 handleNewState(update.updatedState)
                 handleCmd(update.cmd)
-
                 lock = false
                 pollNextMsgFromQueue()
             }
@@ -131,12 +127,12 @@ class Program<S : State> internal constructor(
     }
 
     private fun handleCmd(cmd: Cmd) {
-        interceptor.onCmdReceived(cmd, state)
+        if (cmd is None) return
+        intercept(OnCmdReceived(cmd, state))
         when (cmd) {
-            is None -> return
             is BatchCmd -> cmd.cmds.forEach { handleCmd(it) }
             else -> {
-                if (handleOnConflict(cmd)) return
+                if (shouldIgnoreCmd(cmd)) return
                 val cmdObservable = call(cmd)
                 val cmdDisposable = handleResponse(cmd, cmdObservable)
                 disposableManager.addCmdDisposable(cmd, cmdDisposable)
@@ -144,7 +140,7 @@ class Program<S : State> internal constructor(
         }
     }
 
-    private fun handleOnConflict(cmd: Cmd): Boolean {
+    private fun shouldIgnoreCmd(cmd: Cmd): Boolean {
         return when (cmd.onConflict) {
             OnConflict.IgnoreByHash -> disposableManager.isCmdAlive(cmd)
             OnConflict.IgnoreByClass -> disposableManager.isCmdClassAlive(cmd)
@@ -161,10 +157,10 @@ class Program<S : State> internal constructor(
 
     private fun call(cmd: Cmd): Single<out Msg> {
         return component.call(cmd)
-            .doOnSubscribe { interceptor.onCmdStarted(cmd, state) }
-            .doOnSuccess { interceptor.onCmdSuccess(cmd, it, state) }
-            .doOnError { interceptor.onCmdError(cmd, it, state) }
-            .doOnDispose { interceptor.onCmdCancelled(cmd, state) }
+            .doOnSubscribe { intercept(OnCmdStarted(cmd, state)) }
+            .doOnSuccess { intercept(OnCmdSuccess(cmd, it, state)) }
+            .doOnError { intercept(OnCmdError(cmd, it, state)) }
+            .doOnDispose { intercept(OnCmdCancelled(cmd, state)) }
             .doFinally { disposableManager.removeCmdDisposable(cmd) }
             .subscribeOn(cmd.scheduler ?: cmdScheduler)
     }
@@ -174,5 +170,13 @@ class Program<S : State> internal constructor(
             .observeOn(msgScheduler)
             .subscribe({ msg -> if (msg !is Idle) addMsgToQueue(msg) },
                 { error -> addMsgToQueue(ErrorMsg(error, cmd)) })
+    }
+
+    private fun intercept(event: RxElmEvent) {
+        try {
+            interceptor.onEvent(event)
+        } catch (error: Exception) {
+            Timber.e(error)
+        }
     }
 }

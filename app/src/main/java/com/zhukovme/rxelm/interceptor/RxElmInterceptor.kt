@@ -10,14 +10,29 @@ import com.zhukovme.rxelm.program.State
  */
 @Suppress("ComplexInterface")
 interface RxElmInterceptor {
-    fun onInit(state: State)
-    fun onMsgReceived(msg: Msg, state: State)
-    fun onUpdate(msg: Msg, cmd: Cmd, newState: State?, state: State)
-    fun onRender(state: State)
-    fun onCmdReceived(cmd: Cmd, state: State)
-    fun onCmdStarted(cmd: Cmd, state: State)
-    fun onCmdSuccess(cmd: Cmd, resultMsg: Msg, state: State)
-    fun onCmdError(cmd: Cmd, error: Throwable, state: State)
-    fun onCmdCancelled(cmd: Cmd, state: State)
-    fun onStop(state: State)
+    fun onEvent(event: RxElmEvent)
 }
+
+sealed class RxElmEvent
+
+data class OnInit(val state: State) : RxElmEvent()
+
+data class OnMsgReceived(val msg: Msg, val state: State) : RxElmEvent()
+
+data class OnIgnoreMsg(val ignoredMsg: Msg, val state: State) : RxElmEvent()
+
+data class OnUpdate(val msg: Msg, val cmd: Cmd, val newState: State?, val state: State) : RxElmEvent()
+
+data class OnRender(val state: State) : RxElmEvent()
+
+data class OnCmdReceived(val cmd: Cmd, val state: State) : RxElmEvent()
+
+data class OnCmdStarted(val cmd: Cmd, val state: State) : RxElmEvent()
+
+data class OnCmdSuccess(val cmd: Cmd, val resultMsg: Msg, val state: State) : RxElmEvent()
+
+data class OnCmdError(val cmd: Cmd, val error: Throwable, val state: State) : RxElmEvent()
+
+data class OnCmdCancelled(val cmd: Cmd, val state: State) : RxElmEvent()
+
+data class OnStop(val state: State) : RxElmEvent()
