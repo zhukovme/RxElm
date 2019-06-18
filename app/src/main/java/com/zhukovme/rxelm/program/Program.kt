@@ -8,7 +8,7 @@ import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.disposables.Disposable
 import timber.log.Timber
-import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class Program<S : State> internal constructor(
     private val msgScheduler: Scheduler,
@@ -23,7 +23,7 @@ class Program<S : State> internal constructor(
     var isRendering: Boolean = false
         private set
 
-    private var msgQueue = ArrayDeque<Msg>()
+    private var msgQueue = ConcurrentLinkedQueue<Msg>()
     private val msgRelay: BehaviorRelay<Msg> = BehaviorRelay.create()
     private var lock: Boolean = false
 
@@ -110,13 +110,13 @@ class Program<S : State> internal constructor(
     }
 
     private fun addMsgToQueue(msg: Msg) {
-        msgQueue.addLast(msg)
+        msgQueue.add(msg)
         pollNextMsgFromQueue()
     }
 
     private fun pollNextMsgFromQueue() {
         if (lock) return
-        msgQueue.pollFirst()?.let {
+        msgQueue.poll()?.let {
             lock = true
             msgRelay.accept(it)
         }
