@@ -62,6 +62,12 @@ class DisposableManager {
         }
     }
 
+    fun cancelCmds() {
+        cmdDisposablesMap.values.forEach { cmdDisposablesClassMap ->
+            cmdDisposablesClassMap.values.forEach { it.dispose() }
+        }
+    }
+
     fun removeCmdDisposable(cmd: Cmd) {
         val cmdClass = getCmdClass(cmd)
         val cmdHash = getCmdHash(cmd)
@@ -71,9 +77,7 @@ class DisposableManager {
 
     fun disposeAll() {
         msgDisposable?.dispose()
-        cmdDisposablesMap.values.forEach { cmdDisposablesClassMap ->
-            cmdDisposablesClassMap.values.forEach { it.dispose() }
-        }
+        cancelCmds()
     }
 
     private fun getCmdClass(cmd: Cmd) = cmd.javaClass.hashCode()

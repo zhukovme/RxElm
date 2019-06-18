@@ -3,7 +3,7 @@ package com.zhukovme.rxelm.program
 import io.reactivex.Scheduler
 
 abstract class Cmd(
-    val onConflict: OnConflict = OnConflict.IgnoreByClass,
+    val onConflict: OnConflict = OnConflict.IgnoreByHash,
     val scheduler: Scheduler? = null
 ) {
     override fun toString(): String {
@@ -12,6 +12,9 @@ abstract class Cmd(
 }
 
 object None : Cmd()
+
+object CancelAll : Cmd()
+
 data class BatchCmd(val cmds: MutableSet<Cmd>) : Cmd() {
     constructor(vararg commands: Cmd) : this(commands.toMutableSet())
 

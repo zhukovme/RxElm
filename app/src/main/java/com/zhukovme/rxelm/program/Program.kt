@@ -137,6 +137,7 @@ class Program<S : State> internal constructor(
         intercept(OnCmdReceived(cmd, state))
         when (cmd) {
             is BatchCmd -> cmd.cmds.forEach { handleCmd(it) }
+            is CancelAll -> disposableManager.cancelCmds()
             else -> {
                 if (shouldIgnoreCmd(cmd)) return
                 val cmdObservable = call(cmd)
