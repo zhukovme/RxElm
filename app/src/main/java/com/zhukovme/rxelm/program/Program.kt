@@ -32,7 +32,7 @@ class Program<S : State> internal constructor(
     fun run(initialState: S, initialMsg: Msg = Init) {
         init(initialState)
         accept(initialMsg)
-        render(initialState)
+        render(initialState, state)
     }
 
     fun getState(): S? = if (this::state.isInitialized) state else null
@@ -52,11 +52,11 @@ class Program<S : State> internal constructor(
         addMsgToQueue(msg)
     }
 
-    fun render(state: S) {
+    fun render(newState: S, oldState: S) {
         if (component is RenderableComponent) {
-            intercept(OnRender(state))
+            intercept(OnRender(newState, oldState))
             isRendering = true
-            component.render(state)
+            component.render(newState, oldState)
             isRendering = false
         }
     }
@@ -125,8 +125,9 @@ class Program<S : State> internal constructor(
     private fun handleNewState(newState: S?) {
         newState?.let {
             if (it !== state) {
-                render(newState)
+                val oldState = state
                 state = it
+                render(newState, oldState)
             }
         }
     }

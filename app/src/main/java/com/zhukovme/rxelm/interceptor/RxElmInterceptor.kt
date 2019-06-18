@@ -25,7 +25,7 @@ data class OnIgnoreMsg(val ignoredMsg: Msg, val state: State) : RxElmEvent()
 
 data class OnUpdate(val msg: Msg, val cmd: Cmd, val newState: State?, val state: State) : RxElmEvent()
 
-data class OnRender(val state: State) : RxElmEvent()
+data class OnRender(val newState: State, val oldState: State) : RxElmEvent()
 
 data class OnCmdReceived(val cmd: Cmd, val state: State) : RxElmEvent()
 

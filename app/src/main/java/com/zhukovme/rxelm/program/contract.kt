@@ -9,6 +9,10 @@ interface Component<S : State> {
     fun call(cmd: Cmd): Single<out Msg>
 }
 
+interface RenderableComponent<S : State> : Component<S> {
+    fun render(newState: S, oldState: S)
+}
+
 data class Update<S : State>(
     val updatedState: S? = null,
     val cmd: Cmd = None
@@ -18,10 +22,4 @@ data class Update<S : State>(
             return Update(null, None)
         }
     }
-}
-
-interface RenderableComponent<S : State> : Renderable<S>, Component<S>
-
-interface Renderable<S : State> {
-    fun render(state: S)
 }
