@@ -22,7 +22,7 @@ class ProgramBuilder {
         return this
     }
 
-    fun interceptor(interceptor: RxElmInterceptor): ProgramBuilder {
+    fun addInterceptor(interceptor: RxElmInterceptor): ProgramBuilder {
         this.interceptor.add(interceptor)
         return this
     }

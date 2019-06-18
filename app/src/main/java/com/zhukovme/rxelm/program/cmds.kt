@@ -3,8 +3,8 @@ package com.zhukovme.rxelm.program
 import io.reactivex.Scheduler
 
 abstract class Cmd(
-        val onConflict: OnConflict = OnConflict.IgnoreByClass,
-        val scheduler: Scheduler? = null
+    val onConflict: OnConflict = OnConflict.IgnoreByClass,
+    val scheduler: Scheduler? = null
 ) {
     override fun toString(): String {
         return javaClass.simpleName

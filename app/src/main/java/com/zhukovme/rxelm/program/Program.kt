@@ -92,15 +92,20 @@ class Program<S : State> internal constructor(
         return msgRelay
             .observeOn(msgScheduler)
             .subscribe { msg ->
-                val update = component.update(msg, state)
+                try {
+                    val update = component.update(msg, state)
 
-                if (update.updatedState == null && update.cmd is None) intercept(OnIgnoreMsg(msg, state))
-                else intercept(OnUpdate(msg, update.cmd, update.updatedState, state))
+                    if (update.updatedState == null && update.cmd is None) intercept(OnIgnoreMsg(msg, state))
+                    else intercept(OnUpdate(msg, update.cmd, update.updatedState, state))
 
-                handleNewState(update.updatedState)
-                handleCmd(update.cmd)
-                lock = false
-                pollNextMsgFromQueue()
+                    handleNewState(update.updatedState)
+                    handleCmd(update.cmd)
+                } catch (error: Throwable) {
+                    intercept(OnMsgError(msg, error, state))
+                } finally {
+                    lock = false
+                    pollNextMsgFromQueue()
+                }
             }
     }
 

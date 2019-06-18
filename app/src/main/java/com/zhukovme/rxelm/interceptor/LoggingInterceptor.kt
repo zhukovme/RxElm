@@ -6,6 +6,7 @@ abstract class LoggingInterceptor : RxElmInterceptor {
 
     override fun onEvent(event: RxElmEvent) {
         val error = when (event) {
+            is OnMsgError -> event.error
             is OnCmdError -> event.error
             else -> null
         }

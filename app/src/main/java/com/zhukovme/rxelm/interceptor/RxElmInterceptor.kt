@@ -19,6 +19,8 @@ data class OnInit(val state: State) : RxElmEvent()
 
 data class OnMsgReceived(val msg: Msg, val state: State) : RxElmEvent()
 
+data class OnMsgError(val msg: Msg, val error: Throwable, val state: State) : RxElmEvent()
+
 data class OnIgnoreMsg(val ignoredMsg: Msg, val state: State) : RxElmEvent()
 
 data class OnUpdate(val msg: Msg, val cmd: Cmd, val newState: State?, val state: State) : RxElmEvent()

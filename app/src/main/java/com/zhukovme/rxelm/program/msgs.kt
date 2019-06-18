@@ -2,7 +2,7 @@ package com.zhukovme.rxelm.program
 
 sealed class AbstractMsg
 
-open class Msg : AbstractMsg() {
+abstract class Msg : AbstractMsg() {
     override fun toString(): String {
         return this.javaClass.simpleName
     }

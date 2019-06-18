@@ -2,7 +2,7 @@ package com.zhukovme.rxelm.program
 
 import io.reactivex.Single
 
-open class State
+abstract class State
 
 interface Component<S : State> {
     fun update(msg: Msg, state: S): Update<S>
@@ -10,8 +10,8 @@ interface Component<S : State> {
 }
 
 data class Update<S : State>(
-        val updatedState: S? = null,
-        val cmd: Cmd = None
+    val updatedState: S? = null,
+    val cmd: Cmd = None
 ) {
     companion object {
         fun <S : State> idle(): Update<S> {
